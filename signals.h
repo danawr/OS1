@@ -7,10 +7,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <smash.cpp>
 
+void sighandler(int signum, SIG_HANDLER_PTR func_ptr);
 
-
-
-//test
 #endif
 

@@ -7,6 +7,8 @@
 // Parameters: pointer to jobs, command string
 // Returns: 0 - success,1 - failure
 //**************************************************************************************
+
+
 int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
 {
 	char* cmd;
@@ -128,6 +130,8 @@ int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
 	}
     return 0;
 }
+
+
 //**************************************************************************************
 // function name: ExeExternal
 // Description: executes external command
