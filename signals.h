@@ -7,7 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
-#include <smash.cpp>
+#include "smash.cpp"
+#include "job.h"
 
 void sighandler(int signum, SIG_HANDLER_PTR func_ptr);
 void ctrl_c(int signum);
