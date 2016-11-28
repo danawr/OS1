@@ -101,25 +101,74 @@ int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
         {
             ind= jobs.size()-1; // the newest bg job.
         }
-        std::cout << jobs[jobs.begin()+ind].get_name() << endl;
-        jobs[ind].resume;
+        std::cout << jobs[jobs.begin()+ind].get_name() << std::endl;
+        if (jobs[jobs.begin()+ind].stopped) //if that process is asleep
+        {
+            //TODO - need to send signal to wake him up
+            jobs[jobs.begin()+ind].resume; //this is just the flag. we should probably include this in the signal handler.
+        }
             // TODO  - need to figure out how to make the smash wait for the process to end - fork?
-            // TODO - if the process fails - need to handle it
+        // move to fg = have the fg process (the shell, which we are in) wait for this process to end.
+        if ( waitpid(jobs[jobs.begin()+ind].get_pid, Null, 0) <0  )
+            {
+             // TODO - if the waitpid fails - need to handle it
+            }
         jobs.erase[jobs.begin()+ind];
 	}
 	/*************************************************/
 	else if (!strcmp(cmd, "bg"))
 	{
+        int ind=0;
+        if ( arg[1] )// if there's an argument
+        {
+            ind= atoi(arg[1]);
+        }
+        else
+        {
+            ind= find_last_sleeping_job(&jobs); // TODO - find the newest sleeping job.
+        }
+        if (ind<0)
+        {
+            printf("ther's no sleeping job -> we'll do nothing.\n");
+            return 0;
+        }
+        std::cout << jobs[jobs.begin()+ind].get_name() << std::endl;
+        if (jobs[jobs.begin()+ind].stopped) //if that process is asleep
+        {
+            //TODO - need to send signal to wake him up
+            jobs[jobs.begin()+ind].resume; //this is just the flag. we should probably include this in the signal handler.
+        }
 
+        //need to remove from bg line.
+        jobs.erase[jobs.begin()+ind];
 	}
 	/*************************************************/
 	else if (!strcmp(cmd, "quit"))
 	{
-
+        if ( arg[1] )// if there's an argument => quit kill
+        {
+             while (jobs.size() > 0 ) // counting on the fact that the signal handlers remove the processes from the jobs list!
+            {
+                int curr_pid=jobs[0].get_pid();
+                printf("Sending SIGTERM...");
+                kill(curr_pid, SIGTERM);
+                int start_time = (int) (time(NULL));
+                while (((int) time(NULL) - start_time) < 5) {} // wait five seconds
+                if ( curr_pid==jobs[0].get_pid() ) // it's still on the jobs list => hasn't died
+                {
+                    printf( "(5 sec passed) Sending SIGKILL…" );
+                    kill(curr_pid, SIGKILL);
+                }
+                printf("Done \n")
+            }
+        }
+        kill( getpid(), 9 );
 	}
 	/*************************************************/
 	else // external command
 	{
+ 		if (!getpid())// if this is a son, meaning the shell was forked (bgCmd for built in cmd)
+            return -2;
  		ExeExternal(args, cmdString);
 	 	return 0;
 	}
@@ -144,27 +193,18 @@ void ExeExternal(char *args[MAX_ARG], char* cmdString)
     	switch(pID = fork())
 	{
     		case -1:
-					// Add your code here (error)
-
-					/*
-					your code
-					*/
+					std::cout << "smash error: could not fork for external command" << std::endl;
+					break;
         	case 0 :
                 	// Child Process
                		setpgrp();
-
-			        // Add your code here (execute an external command)
-
-					/*
-					your code
-					*/
-
+                    execvp(cmdString, args);
+                    exit(1);
+                    break;
 			default:
                 	// Add your code here
-
-					/*
-					your code
-					*/
+                    waitpid(pID, NULL, 0); // the bgCmd will take care of bg jobs off all kinds.
+                    break;
 	}
 }
 //**************************************************************************************
@@ -179,11 +219,26 @@ int ExeComp(char* lineSize)
 	char *args[MAX_ARG];
     if ((strstr(lineSize, "|")) || (strstr(lineSize, "<")) || (strstr(lineSize, ">")) || (strstr(lineSize, "*")) || (strstr(lineSize, "?")) || (strstr(lineSize, ">>")) || (strstr(lineSize, "|&")))
     {
-		// Add your code here (execute a complicated command)
-
-		/*
-		your code
-		*/
+        args[0]="-fc";
+        args[1]=str(lineSize);
+        int pID;
+    	switch(pID = fork())
+        {
+    		case -1:
+					std::cout << "smash error: could not fork for external command" << std::endl;
+					break;
+        	case 0 :
+                	// Child Process
+               		setpgrp();
+                    execvp("csh", args);
+                    exit(1);
+                    break;
+			default:
+                	// Add your code here
+                    waitpid(pID, NULL, 0); // the bgCmd will take care of bg jobs off all kinds.
+                    break;
+        }
+        return 0;
 	}
 	return -1;
 }
@@ -202,13 +257,73 @@ int BgCmd(char* lineSize, void* jobs)
 	if (lineSize[strlen(lineSize)-2] == '&')
 	{
 		lineSize[strlen(lineSize)-2] = '\0';
-		// Add your code here (execute a in the background)
 
-		/*
-		your code
-		*/
+    char* cmd = strtok(lineSize, delimiters);
+	if (cmd == NULL)
+		return 0;
+   	args[0] = cmd;
+	for (i=1; i<MAX_ARG; i++)
+	{
+		args[i] = strtok(NULL, delimiters);
+		if (args[i] != NULL)
+			num_arg++;
+
+	}
+
+		// Add your code here (execute a in the background - only for external commands)
+            int pID;
+            switch(pID = fork())
+            {
+                case -1:
+                    std::cout << "smash error: could not fork for bg command" << std::endl;
+					break;
+                case 0 :
+                	// Child Process
+               		setpgrp();
+               		// add to jobs list
+               		int child_pid=getpid();
+               		job curr_job=job(cmd,child_id);
+               		jobs.push_back(&curr_job);
+               		// execute
+               		if(ExeComp(lineSize)) //if it fails
+                        ExeExternal(args,cmd);
+                    // once completed, we want to remove from jobs list. the actual waiting process is inside ExeExternal (and it waited in there)
+                    int ind= find_ind_by_id(&jobs, child_pid);
+                    if (ind<0)
+                    {
+                        printf("child pid is not in the jobs vector");
+                        break;
+                    }
+                    jobs.erase(jobs.begin()+ind);
+                    break;
+                default:
+                    // WE DONT WANT THE SHELL TO WAIT
+                    return 0;
+                    break;
+            }
+
 
 	}
 	return -1;
 }
 
+int find_ind_by_id(std::vector &jobs, int child_pid)
+{
+    for (int i=0; i< jobs.size(); i++)
+    {
+        if (jobs[jobs.begin()+i].get_pid==child_pid)
+            return i;
+    }
+    return -1;
+};
+
+
+int find_last_sleeping_job(std::vector &jobs)
+{
+    for (int i= jobs.size()-1; i>-1; i--)
+    {
+        if (jobs[jobs.begin()+i].is_stopped)
+            return i;
+    }
+    return -1;
+};

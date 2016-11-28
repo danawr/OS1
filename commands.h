@@ -16,5 +16,7 @@ int BgCmd(char* lineSize, void* jobs);
 int ExeCmd(void* jobs, char* lineSize, char* cmdString);
 void ExeExternal(char *args[MAX_ARG], char* cmdString);
 extern char* last_dir;
+int find_ind_by_id(std::vector &jobs, int child_pid);
+int find_last_sleeping_job(std::vector &jobs)
 #endif
 

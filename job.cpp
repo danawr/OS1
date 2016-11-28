@@ -9,11 +9,11 @@ job::job()
     pid_=-1;
 }
 
-job::job(char* name, char* arguments, int pid)
+job::job(char* name,  int pid)
 {
     name_=str(name);
     pid_=pid;
-    arguments_=str(arguments);
+    //arguments_=str(arguments);
     arriving_time_=(int) (time(NULL));
     stopped_=0;
 }
