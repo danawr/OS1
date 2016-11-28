@@ -58,6 +58,8 @@ void ctrl_c(int signum) {
 
 void ctrl_z(int signum) {
 	int currPid = getpid();
+	char* delimiters = " \t\n";
+	char* cmd = strtok(lineSize, delimiters);
 
 	if (currPid == SMASH_PID) //no process in foreground
 		return;
@@ -71,6 +73,8 @@ void ctrl_z(int signum) {
 
 	/********put process to a job list*******/
 	
+	job newJob=job(cmd, currPid);
+	jobs.push_back(&newJob);
 
 	printf("signal SIGTSTP was sent to pid %d\n", currPid);
 

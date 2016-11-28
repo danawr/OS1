@@ -10,6 +10,8 @@
 #include <smash.cpp>
 
 void sighandler(int signum, SIG_HANDLER_PTR func_ptr);
+void ctrl_c(int signum);
+void ctrl_z(int signum);
 
 #endif
 
