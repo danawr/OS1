@@ -72,7 +72,7 @@ void ctrl_z(int signum) {
 	}
 
 	/********put process to a job list*******/
-	
+
 	job newJob=job(cmd, currPid);
 	newJob.stop();
 	jobs.push_back(&newJob);

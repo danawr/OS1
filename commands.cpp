@@ -1,14 +1,15 @@
 //		commands.c
 //********************************************
 #include "commands.h"
+
+
+
 //********************************************
 // function name: ExeCmd
 // Description: interperts and executes built-in commands
 // Parameters: pointer to jobs, command string
 // Returns: 0 - success,1 - failure
 //**************************************************************************************
-
-
 int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
 {
 	char* cmd;
@@ -16,7 +17,7 @@ int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
 	char pwd[MAX_LINE_SIZE];
 	char* delimiters = " \t\n";
 	int i = 0, num_arg = 0;
-	bool illegal_cmd = FALSE; // illegal command
+	bool illegal_cmd = false; // illegal command
     	cmd = strtok(lineSize, delimiters);
 	if (cmd == NULL)
 		return 0;
@@ -35,8 +36,9 @@ int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
 /*************************************************/
 	if (!strcmp(cmd, "cd") )
 	{
-        char* curr_dir=getcwd();
-		if ( !strcmp(arg[1], "-") ) //if we need to change to the last dir
+        char* curr_dir;
+        getcwd(curr_dir,MAX_LINE_SIZE);
+		if ( !strcmp(args[1], "-") ) //if we need to change to the last dir
 		{
             if (last_dir)
             {
@@ -44,11 +46,11 @@ int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
                 last_dir=curr_dir;
             }
 		}
-		else if ( arg[1]!=NULL )//if there's a path
+		else if ( args[1]!=NULL )//if there's a path
 		{
-            if ( chdir(arg[1])) //returns 0 for success
+            if ( chdir(args[1])) //returns 0 for success
             {
-                std::cerr << "smash error: > " << args[1] << " - path not found" << std::endl;
+               std::cerr << "smash error: > " << args[1] << " - path not found" << std::endl;
             }
             else //we succeeeded the move - need to update last_dir
             {
@@ -61,13 +63,15 @@ int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
 	/*************************************************/
 	else if (!strcmp(cmd, "pwd"))
 	{
-            printf("%s\n", str(getcwd()) );
+        char* curr_dir;
+        getcwd(curr_dir,MAX_LINE_SIZE);
+        printf("%s\n", curr_dir );
 	}
 
 	/*************************************************/
 	else if (!strcmp(cmd, "history"))
 	{
-        std::deque<string>iterator it= cmd_history.end(); //from the new (last) to the old (first in line)
+        std::deque<std::string>::iterator it = cmd_history.end(); //from the new (last) to the old (first in line)
         while(it!=cmd_history.begin())
         {
             std::cout << *it << endl;
