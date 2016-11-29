@@ -1,7 +1,10 @@
-//		commands.c
+//		commands.cpp
 //********************************************
 #include "commands.h"
-
+using namespace std;
+std::deque<std::string> cmd_history;
+std::vector<Job> Jobs; //This represents the list of Jobs. Please change to a preferred type (e.g array of char*)
+char* last_dir="no last dir";
 
 
 //********************************************
@@ -10,12 +13,12 @@
 // Parameters: pointer to jobs, command string
 // Returns: 0 - success,1 - failure
 //**************************************************************************************
-int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
+int ExeCmd(char* lineSize, char* cmdString)
 {
 	char* cmd;
 	char* args[MAX_ARG];
 	char pwd[MAX_LINE_SIZE];
-	char* delimiters = " \t\n";
+	char* delimiters =(char*) " \t\n";
 	int i = 0, num_arg = 0;
 	bool illegal_cmd = false; // illegal command
     	cmd = strtok(lineSize, delimiters);
@@ -37,10 +40,11 @@ int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
 	if (!strcmp(cmd, "cd") )
 	{
         char* curr_dir;
-        getcwd(curr_dir,MAX_LINE_SIZE);
+
+        getcwd(curr_dir, MAX_LINE_SIZE);
 		if ( !strcmp(args[1], "-") ) //if we need to change to the last dir
 		{
-            if (last_dir)
+            if (!strcmp(last_dir, "no last dir"))
             {
                 chdir(last_dir);
                 last_dir=curr_dir;
@@ -63,15 +67,16 @@ int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
 	/*************************************************/
 	else if (!strcmp(cmd, "pwd"))
 	{
-        char* curr_dir;
-        getcwd(curr_dir,MAX_LINE_SIZE);
-        printf("%s\n", curr_dir );
+            char* curr_dir;
+            getcwd(curr_dir, MAX_LINE_SIZE);
+            std::string str(curr_dir);
+            printf("%s\n",curr_dir );
 	}
 
 	/*************************************************/
 	else if (!strcmp(cmd, "history"))
 	{
-        std::deque<std::string>::iterator it = cmd_history.end(); //from the new (last) to the old (first in line)
+        std::deque<std::string>::iterator it= cmd_history.end(); //from the new (last) to the old (first in line)
         while(it!=cmd_history.begin())
         {
             std::cout << *it << endl;
@@ -82,10 +87,10 @@ int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
 
 	else if (!strcmp(cmd, "jobs"))
 	{
-        for (int i=0;i<jobs.size(); i++)
+        for (unsigned int i=0;i<Jobs.size(); i++)
         {
-            int waiting_in_bg_time= (int)(time(NULL)) - jobs[i].get_bg_arriving_time();
-            std::cout<< "[" << i << "]" <<" "<< jobs[i].get_name() <<" "<< jobs[i].get_pid() <<" "<< waiting_in_bg_time << "secs" << endl;
+            int waiting_in_bg_time= (int)(time(NULL)) - Jobs[i].get_bg_arriving_time();
+            std::cout<< "[" << i << "]" <<" "<< Jobs[i].get_name() <<" "<< Jobs[i].get_pid() <<" "<< waiting_in_bg_time << "secs" << endl;
         }
 	}
 	/*************************************************/
@@ -94,76 +99,78 @@ int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
         std::cout<< "smash pid is" << getpid() << endl;
 	}
 	/*************************************************/
-	else if (!strcmp(cmd, "fg"))
+	else if (!strcmp(cmd, "fg"))  //wake a sleeping bg process up AND WAIT FOR HIM
 	{
         int ind=0;
-        if ( arg[1] )// if there's an argument
+        if ( args[1] )// if there's an argument
         {
-            ind= atoi(arg[1]);
+            ind= atoi(args[1]);
         }
         else
         {
-            ind= jobs.size()-1; // the newest bg job.
+            ind= Jobs.size()-1; // the newest bg Job.
         }
-        std::cout << jobs[jobs.begin()+ind].get_name() << std::endl;
-        if (jobs[jobs.begin()+ind].stopped) //if that process is asleep
+        //std::cout << Jobs[Jobs.begin()+ind].get_name() << std::endl;
+        std::cout << Jobs[ind].get_name() << std::endl;
+        if ( Jobs[ind].is_stopped() ) //if that process is asleep
         {
-            //TODO - need to send signal to wake him up
-            jobs[jobs.begin()+ind].resume; //this is just the flag. we should probably include this in the signal handler.
+            //need to send signal to wake him up
+            kill(Jobs[ind].get_pid(), SIGCONT);
+            Jobs[ind].resume(); //this is just the flag. we should probably include this in the signal handler.
         }
             // TODO  - need to figure out how to make the smash wait for the process to end - fork?
         // move to fg = have the fg process (the shell, which we are in) wait for this process to end.
-        if ( waitpid(jobs[jobs.begin()+ind].get_pid, Null, 0) <0  )
+        if ( waitpid(Jobs[ind].get_pid(), NULL, 0) <0  )
             {
              // TODO - if the waitpid fails - need to handle it
             }
-        jobs.erase[jobs.begin()+ind];
+        //fg is for processes that are already in the Jobs list. we just need to wake them up, they will remove themselves out (BgCmd).
 	}
 	/*************************************************/
-	else if (!strcmp(cmd, "bg"))
+	else if (!strcmp(cmd, "bg")) //wake a sleeping bg process up
 	{
         int ind=0;
-        if ( arg[1] )// if there's an argument
+        if ( args[1] )// if there's an argument
         {
-            ind= atoi(arg[1]);
+            ind= atoi(args[1]);
         }
         else
         {
-            ind= find_last_sleeping_job(&jobs); // TODO - find the newest sleeping job.
+            ind= find_last_sleeping_Job();
         }
         if (ind<0)
         {
-            printf("ther's no sleeping job -> we'll do nothing.\n");
+            printf("there's no sleeping Job -> we'll do nothing.\n");
             return 0;
         }
-        std::cout << jobs[jobs.begin()+ind].get_name() << std::endl;
-        if (jobs[jobs.begin()+ind].stopped) //if that process is asleep
+        std::cout << Jobs[ind].get_name() << std::endl;
+        if (Jobs[ind].is_stopped()) //if that process is asleep
         {
-            //TODO - need to send signal to wake him up
-            jobs[jobs.begin()+ind].resume; //this is just the flag. we should probably include this in the signal handler.
+            //need to send signal to wake him up
+            kill(Jobs[ind].get_pid(), SIGCONT);
+            Jobs[ind].resume(); //this is just the flag. we should probably include this in the signal handler.
         }
 
-        //need to remove from bg line.
-        jobs.erase[jobs.begin()+ind];
+
 	}
 	/*************************************************/
 	else if (!strcmp(cmd, "quit"))
 	{
-        if ( arg[1] )// if there's an argument => quit kill
+        if ( args[1] )// if there's an argument => quit kill
         {
-             while (jobs.size() > 0 ) // counting on the fact that the signal handlers remove the processes from the jobs list!
+             while (Jobs.size() > 0 ) // counting on the fact that the signal handlers remove the processes from the Jobs list!
             {
-                int curr_pid=jobs[0].get_pid();
+                int curr_pid=Jobs[0].get_pid();
                 printf("Sending SIGTERM...");
                 kill(curr_pid, SIGTERM);
                 int start_time = (int) (time(NULL));
                 while (((int) time(NULL) - start_time) < 5) {} // wait five seconds
-                if ( curr_pid==jobs[0].get_pid() ) // it's still on the jobs list => hasn't died
+                if ( curr_pid==Jobs[0].get_pid() ) // it's still on the Jobs list => hasn't died
                 {
                     printf( "(5 sec passed) Sending SIGKILL…" );
                     kill(curr_pid, SIGKILL);
                 }
-                printf("Done \n")
+                printf("Done \n");
             }
         }
         kill( getpid(), 9 );
@@ -176,15 +183,13 @@ int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
  		ExeExternal(args, cmdString);
 	 	return 0;
 	}
-	if (illegal_cmd == TRUE)
+	if (illegal_cmd == true)
 	{
 		printf("smash error: > \"%s\"\n", cmdString);
 		return 1;
 	}
     return 0;
 }
-
-
 //**************************************************************************************
 // function name: ExeExternal
 // Description: executes external command
@@ -207,7 +212,7 @@ void ExeExternal(char *args[MAX_ARG], char* cmdString)
                     break;
 			default:
                 	// Add your code here
-                    waitpid(pID, NULL, 0); // the bgCmd will take care of bg jobs off all kinds.
+                    waitpid(pID, NULL, 0); // the bgCmd will take care of bg Jobs off all kinds.
                     break;
 	}
 }
@@ -224,7 +229,8 @@ int ExeComp(char* lineSize)
     if ((strstr(lineSize, "|")) || (strstr(lineSize, "<")) || (strstr(lineSize, ">")) || (strstr(lineSize, "*")) || (strstr(lineSize, "?")) || (strstr(lineSize, ">>")) || (strstr(lineSize, "|&")))
     {
         args[0]="-fc";
-        args[1]=str(lineSize);
+        std::string str(lineSize);
+        args[1]=lineSize;
         int pID;
     	switch(pID = fork())
         {
@@ -239,7 +245,7 @@ int ExeComp(char* lineSize)
                     break;
 			default:
                 	// Add your code here
-                    waitpid(pID, NULL, 0); // the bgCmd will take care of bg jobs off all kinds.
+                    waitpid(pID, NULL, 0); // the bgCmd will take care of bg Jobs off all kinds.
                     break;
         }
         return 0;
@@ -248,14 +254,14 @@ int ExeComp(char* lineSize)
 }
 //**************************************************************************************
 // function name: BgCmd
-// Description: if command is in background, insert the command to jobs
-// Parameters: command string, pointer to jobs
+// Description: if command is in background, insert the command to Jobs
+// Parameters: command string, pointer to Jobs
 // Returns: 0- BG command -1- if not
 //**************************************************************************************
-int BgCmd(char* lineSize, void* jobs)
+int BgCmd(char* lineSize)
 {
 
-	char* Command;
+	//char* Command;
 	char* delimiters = " \t\n";
 	char *args[MAX_ARG];
 	if (lineSize[strlen(lineSize)-2] == '&')
@@ -266,7 +272,8 @@ int BgCmd(char* lineSize, void* jobs)
 	if (cmd == NULL)
 		return 0;
    	args[0] = cmd;
-	for (i=1; i<MAX_ARG; i++)
+   	int num_arg=0;
+	for (int i=1; i<MAX_ARG; i++)
 	{
 		args[i] = strtok(NULL, delimiters);
 		if (args[i] != NULL)
@@ -284,26 +291,29 @@ int BgCmd(char* lineSize, void* jobs)
                 case 0 :
                 	// Child Process
                		setpgrp();
-               		// add to jobs list
+               		// add to Jobs list
                		int child_pid=getpid();
-               		job curr_job=job(cmd,child_id);
-               		jobs.push_back(&curr_job);
+                    //std::string str(cmd);
+               		Job curr_Job= Job(cmd,child_pid);
+               		Jobs.push_back(curr_Job);
+               		//((std::vector<Job>)(*Jobs)).push_back(curr_Job);
                		// execute
                		if(ExeComp(lineSize)) //if it fails
                         ExeExternal(args,cmd);
-                    // once completed, we want to remove from jobs list. the actual waiting process is inside ExeExternal (and it waited in there)
-                    int ind= find_ind_by_id(&jobs, child_pid);
+                    // once completed, we want to remove from Jobs list. the actual waiting process is inside ExeExternal (and it waited in there)
+                    int ind= find_ind_by_id(child_pid);
                     if (ind<0)
                     {
-                        printf("child pid is not in the jobs vector");
+                        printf("child pid is not in the Jobs vector");
                         break;
                     }
-                    jobs.erase(jobs.begin()+ind);
+                    Jobs.erase(Jobs.begin()+ind);
+                    exit(0);
                     break;
-                default:
+                //default:
                     // WE DONT WANT THE SHELL TO WAIT
-                    return 0;
-                    break;
+                  //  return 0;
+                    //break;
             }
 
 
@@ -311,22 +321,22 @@ int BgCmd(char* lineSize, void* jobs)
 	return -1;
 }
 
-int find_ind_by_id(std::vector &jobs, int child_pid)
+int find_ind_by_id( int child_pid)
 {
-    for (int i=0; i< jobs.size(); i++)
+    for (unsigned int  i=0; i< Jobs.size(); i++)
     {
-        if (jobs[jobs.begin()+i].get_pid==child_pid)
+        if (Jobs[i].get_pid()==child_pid)
             return i;
     }
     return -1;
 };
 
 
-int find_last_sleeping_job(std::vector &jobs)
+int find_last_sleeping_Job()
 {
-    for (int i= jobs.size()-1; i>-1; i--)
+    for (int i= Jobs.size()-1; i>-1; i--)
     {
-        if (jobs[jobs.begin()+i].is_stopped)
+        if (Jobs[i].is_stopped())
             return i;
     }
     return -1;
