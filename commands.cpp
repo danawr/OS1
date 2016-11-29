@@ -1,22 +1,24 @@
-//		commands.c
+//		commands.cpp
 //********************************************
 #include "commands.h"
+using namespace std;
+#include <deque>
+
+
 //********************************************
 // function name: ExeCmd
 // Description: interperts and executes built-in commands
 // Parameters: pointer to jobs, command string
 // Returns: 0 - success,1 - failure
 //**************************************************************************************
-
-
 int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
 {
 	char* cmd;
 	char* args[MAX_ARG];
 	char pwd[MAX_LINE_SIZE];
-	char* delimiters = " \t\n";
+	char* delimiters =(char*) " \t\n";
 	int i = 0, num_arg = 0;
-	bool illegal_cmd = FALSE; // illegal command
+	bool illegal_cmd = false; // illegal command
     	cmd = strtok(lineSize, delimiters);
 	if (cmd == NULL)
 		return 0;
@@ -35,8 +37,9 @@ int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
 /*************************************************/
 	if (!strcmp(cmd, "cd") )
 	{
-        char* curr_dir=getcwd();
-		if ( !strcmp(arg[1], "-") ) //if we need to change to the last dir
+        char* curr_dir;
+        getcwd(curr_dir, MAX_LINE_SIZE);
+		if ( !strcmp(args[1], "-") ) //if we need to change to the last dir
 		{
             if (last_dir)
             {
@@ -44,9 +47,9 @@ int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
                 last_dir=curr_dir;
             }
 		}
-		else if ( arg[1]!=NULL )//if there's a path
+		else if ( args[1]!=NULL )//if there's a path
 		{
-            if ( chdir(arg[1])) //returns 0 for success
+            if ( chdir(args[1])) //returns 0 for success
             {
                 std::cerr << "smash error: > " << args[1] << " - path not found" << std::endl;
             }
@@ -61,13 +64,16 @@ int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
 	/*************************************************/
 	else if (!strcmp(cmd, "pwd"))
 	{
-            printf("%s\n", str(getcwd()) );
+            char* curr_dir;
+            getcwd(curr_dir, MAX_LINE_SIZE);
+            std::string str(curr_dir);
+            printf("%s\n",curr_dir );
 	}
 
 	/*************************************************/
 	else if (!strcmp(cmd, "history"))
 	{
-        std::deque<string>iterator it= cmd_history.end(); //from the new (last) to the old (first in line)
+        std::deque<string>::iterator it= cmd_history.end(); //from the new (last) to the old (first in line)
         while(it!=cmd_history.begin())
         {
             std::cout << *it << endl;
@@ -78,7 +84,7 @@ int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
 
 	else if (!strcmp(cmd, "jobs"))
 	{
-        for (int i=0;i<jobs.size(); i++)
+        for (unsigned int i=0;i<jobs.size(); i++)
         {
             int waiting_in_bg_time= (int)(time(NULL)) - jobs[i].get_bg_arriving_time();
             std::cout<< "[" << i << "]" <<" "<< jobs[i].get_name() <<" "<< jobs[i].get_pid() <<" "<< waiting_in_bg_time << "secs" << endl;
@@ -90,7 +96,7 @@ int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
         std::cout<< "smash pid is" << getpid() << endl;
 	}
 	/*************************************************/
-	else if (!strcmp(cmd, "fg"))
+	else if (!strcmp(cmd, "fg"))  //wake a sleeping bg process up AND WAIT FOR HIM
 	{
         int ind=0;
         if ( arg[1] )// if there's an argument
@@ -104,7 +110,8 @@ int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
         std::cout << jobs[jobs.begin()+ind].get_name() << std::endl;
         if (jobs[jobs.begin()+ind].stopped) //if that process is asleep
         {
-            //TODO - need to send signal to wake him up
+            //need to send signal to wake him up
+            kill(jobs[jobs.begin()+ind].get_pid(), SIGCONT);
             jobs[jobs.begin()+ind].resume; //this is just the flag. we should probably include this in the signal handler.
         }
             // TODO  - need to figure out how to make the smash wait for the process to end - fork?
@@ -113,10 +120,10 @@ int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
             {
              // TODO - if the waitpid fails - need to handle it
             }
-        jobs.erase[jobs.begin()+ind];
+        //fg is for processes that are already in the jobs list. we just need to wake them up, they will remove themselves out (BgCmd).
 	}
 	/*************************************************/
-	else if (!strcmp(cmd, "bg"))
+	else if (!strcmp(cmd, "bg")) //wake a sleeping bg process up
 	{
         int ind=0;
         if ( arg[1] )// if there's an argument
@@ -125,22 +132,22 @@ int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
         }
         else
         {
-            ind= find_last_sleeping_job(&jobs); // TODO - find the newest sleeping job.
+            ind= find_last_sleeping_job(&jobs);
         }
         if (ind<0)
         {
-            printf("ther's no sleeping job -> we'll do nothing.\n");
+            printf("there's no sleeping job -> we'll do nothing.\n");
             return 0;
         }
         std::cout << jobs[jobs.begin()+ind].get_name() << std::endl;
         if (jobs[jobs.begin()+ind].stopped) //if that process is asleep
         {
-            //TODO - need to send signal to wake him up
+            //need to send signal to wake him up
+            kill(jobs[jobs.begin()+ind].get_pid(), SIGCONT);
             jobs[jobs.begin()+ind].resume; //this is just the flag. we should probably include this in the signal handler.
         }
 
-        //need to remove from bg line.
-        jobs.erase[jobs.begin()+ind];
+
 	}
 	/*************************************************/
 	else if (!strcmp(cmd, "quit"))
@@ -179,8 +186,6 @@ int ExeCmd(std::vector<job> &jobs, char* lineSize, char* cmdString)
 	}
     return 0;
 }
-
-
 //**************************************************************************************
 // function name: ExeExternal
 // Description: executes external command
@@ -295,6 +300,7 @@ int BgCmd(char* lineSize, void* jobs)
                         break;
                     }
                     jobs.erase(jobs.begin()+ind);
+                    exit(0);
                     break;
                 default:
                     // WE DONT WANT THE SHELL TO WAIT
