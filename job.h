@@ -1,6 +1,15 @@
 #ifndef JOB_H
 #define JOB_H
-
+#include <unistd.h>
+#include <stdio.h>
+#include <time.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <string>
+#include <job.h>
+#include <vector>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 class job
 {
@@ -9,9 +18,9 @@ class job
         job(char* name, char* argument, int pid);
         virtual ~job();
 
-        string get_name();
+        std::string get_name();
         int get_pid();
-        string get_arguments();
+        std::string get_arguments();
         int get_arriving_time();
         int get_bg_arrivng_time();
         bool is_stopped();
@@ -21,9 +30,9 @@ class job
 
     //protected:
     private:
-        string name_;
+        std::string name_;
         int pid_;
-        string arguments;
+        std::string arguments;
         int arriving_time_;
         int bg_arrivng_time_;
         bool stopped_;
