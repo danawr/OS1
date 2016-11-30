@@ -45,7 +45,7 @@ int ExeCmd(char* lineSize, char* cmdString)
         curr_dir = new char [MAX_LINE_SIZE];
         getcwd(curr_dir, MAX_LINE_SIZE);
 
-        if( args[1]==NULL )
+        if( args[1]==NULL ) //"cd" doesn't recieve arguments
 		{
             std::cout<<"'cd' command must recieve a path or '-'"<<std::endl;
 		}
@@ -67,7 +67,6 @@ int ExeCmd(char* lineSize, char* cmdString)
             {
                 strcpy(last_dir,curr_dir);
             }
-        //TODO: check when "cd" doesn't recieve arguments
 		}
 
         delete[] curr_dir;
@@ -87,11 +86,11 @@ int ExeCmd(char* lineSize, char* cmdString)
 	/*************************************************/
 	else if (!strcmp(cmd, "history"))
 	{
-        std::deque<std::string>::iterator it= cmd_history.end(); //from the new (last) to the old (first in line)
-        while(it!=cmd_history.begin())
+        std::deque<std::string>::iterator it= cmd_history.begin(); //from the new (last) to the old (first in line)
+        while(it!=(cmd_history.end()-1))
         {
             std::cout << *it << endl;
-            it--;
+            it++;
         }
 	}
 	/*************************************************/
