@@ -68,9 +68,11 @@ int ExeCmd(char* lineSize, char* cmdString)
 	else if (!strcmp(cmd, "pwd"))
 	{
             char* curr_dir;
+            curr_dir = new char [MAX_LINE_SIZE];
             getcwd(curr_dir, MAX_LINE_SIZE);
-            std::string str(curr_dir);
+            //std::string str(curr_dir);
             printf("%s\n",curr_dir );
+            delete[] curr_dir;
 	}
 
 	/*************************************************/
