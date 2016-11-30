@@ -8,8 +8,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
-#include "smash.cpp"
-#include "job.h"
+#include "Job.h"
+//#include "smash.cpp"
+#include "commands.h"
 
 typedef void(*SIG_HANDLER_PTR)(int signum);
 

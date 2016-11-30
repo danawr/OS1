@@ -15,15 +15,12 @@ main file. This file contains the main function of smash
 #define MAX_LINE_SIZE 80
 #define MAXARGS 20
 #define MAX_CMD_HISTORY_SIZE 50
+
+
 char* L_Fg_Cmd;
 int SMASH_PID;
-std::vector<job> jobs; //This represents the list of jobs. Please change to a preferred type (e.g array of char*)
 char lineSize[MAX_LINE_SIZE];
-extern std::deque<std::string> cmd_history;
 
-//extern std::deque<std::string> cmd_history;
-
-#define MAX_CMD_HISTORY_SIZE 50
 
 
 //**************************************************************************************

@@ -7,6 +7,8 @@
    Synopsis: handle the Control-C */
 #include "signals.h"
 
+extern int SMASH_PID;
+extern char lineSize[MAX_LINE_SIZE];
 
 //********************************************
 // function name: sighandler
@@ -73,9 +75,9 @@ void ctrl_z(int signum) {
 
 	/********put process to a job list*******/
 
-	job newJob=job(cmd, currPid);
+	Job newJob=Job(cmd, currPid);
 	newJob.stop();
-	jobs.push_back(&newJob);
+	Jobs.push_back(newJob);
 
 	printf("signal SIGTSTP was sent to pid %d\n", currPid);
 
