@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 		cmdString[0]='\0';
 	}
 
-	delete last_dir[];
+	delete[] last_dir;
     return 0;
 }
 

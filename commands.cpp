@@ -45,7 +45,11 @@ int ExeCmd(char* lineSize, char* cmdString)
         curr_dir = new char [MAX_LINE_SIZE];
         getcwd(curr_dir, MAX_LINE_SIZE);
 
-		if ( !strcmp(args[1], "-") ) //if we need to change to the last dir
+        if( args[1]==NULL )
+		{
+            std::cout<<"'cd' command must recieve a path or '-'"<<std::endl;
+		}
+		else if ( !strcmp(args[1], "-") ) //if we need to change to the last dir
 		{
             if (strcmp(last_dir, "no last dir")!=0)
             {
@@ -65,6 +69,7 @@ int ExeCmd(char* lineSize, char* cmdString)
             }
         //TODO: check when "cd" doesn't recieve arguments
 		}
+
         delete[] curr_dir;
 	}
 
