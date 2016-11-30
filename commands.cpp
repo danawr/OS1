@@ -4,7 +4,7 @@
 using namespace std;
 std::deque<std::string> cmd_history;
 std::vector<Job> Jobs; //This represents the list of Jobs. Please change to a preferred type (e.g array of char*)
-char* last_dir="no last dir";
+char* last_dir;
 
 
 //********************************************
@@ -32,6 +32,8 @@ int ExeCmd(char* lineSize, char* cmdString)
 			num_arg++;
 
 	}
+
+
 /*************************************************/
 // Built in Commands PLEASE NOTE NOT ALL REQUIRED
 // ARE IN THIS CHAIN OF IF COMMANDS. PLEASE ADD
@@ -40,14 +42,15 @@ int ExeCmd(char* lineSize, char* cmdString)
 	if (!strcmp(cmd, "cd") )
 	{
         char* curr_dir;
-
+        curr_dir = new char [MAX_LINE_SIZE];
         getcwd(curr_dir, MAX_LINE_SIZE);
+
 		if ( !strcmp(args[1], "-") ) //if we need to change to the last dir
 		{
-            if (!strcmp(last_dir, "no last dir"))
+            if (strcmp(last_dir, "no last dir")!=0)
             {
-                chdir(last_dir);
-                last_dir=curr_dir;
+               if(!chdir(last_dir))
+                    strcpy(last_dir,curr_dir);
             }
 		}
 		else if ( args[1]!=NULL )//if there's a path
@@ -58,10 +61,11 @@ int ExeCmd(char* lineSize, char* cmdString)
             }
             else //we succeeeded the move - need to update last_dir
             {
-                last_dir=curr_dir;
+                strcpy(last_dir,curr_dir);
             }
-
+        //TODO: check when "cd" doesn't recieve arguments
 		}
+        delete[] curr_dir;
 	}
 
 	/*************************************************/
