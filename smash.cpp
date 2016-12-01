@@ -18,7 +18,7 @@ main file. This file contains the main function of smash
 
 
 char* L_Fg_Cmd;
-int SMASH_PID;
+int GPID;
 char lineSize[MAX_LINE_SIZE];
 extern char* last_dir;
 
@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 	// Init globals
     last_dir = new char [MAX_LINE_SIZE]; //////////////need to free
 	strcpy(last_dir, "no last dir");
-	SMASH_PID = getpid();
+	GPID = -1;
     //jobs = NULL;
 
 	L_Fg_Cmd =(char*)malloc(sizeof(char)*(MAX_LINE_SIZE+1));

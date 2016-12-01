@@ -7,7 +7,7 @@
    Synopsis: handle the Control-C */
 #include "signals.h"
 
-extern int SMASH_PID;
+extern int GPID;
 extern char lineSize[MAX_LINE_SIZE];
 
 //********************************************
@@ -34,19 +34,18 @@ void sighandler(int signum, SIG_HANDLER_PTR func_ptr) {
 // Returns: void
 //********************************************
 void ctrl_c(int signum) {
-	int currPid = getpid();
 
-	if (currPid == SMASH_PID) //no process in foreground
-		return;
+    if(GPID == -1)//no process in fg
+        return;
 
-	if (kill(currPid, SIGINT))
+	if (kill(GPID, SIGINT))
 	{
 		perror("Error: ");
-		printf("Error failed to send SIGINT to %d\n", currPid);
+		printf("Error failed to send SIGINT to %d\n", GPID);
 		return;
 	}
 
-	printf("signal SIGINT was sent to pid %d\n", currPid);
+	printf("signal SIGINT was sent to pid %d\n", GPID);
 	return;
 
 }
@@ -59,27 +58,27 @@ void ctrl_c(int signum) {
 //********************************************
 
 void ctrl_z(int signum) {
-	int currPid = getpid();
+	//int currPid = getpid();
 	char* delimiters = " \t\n";
 	char* cmd = strtok(lineSize, delimiters);
 
-	if (currPid == SMASH_PID) //no process in foreground
-		return;
+    if(GPID == -1)//no process in fg
+        return;
 
-	if (kill(currPid, SIGTSTP))
+	if (kill(GPID, SIGTSTP))
 	{
 		perror("Error: ");
-		printf("Error failed to send SIGTSTP to %d\n", currPid);
+		printf("Error failed to send SIGTSTP to %d\n", GPID);
 		return;
 	}
 
 	/********put process to a job list*******/
 
-	Job newJob=Job(cmd, currPid);
+	Job newJob=Job(cmd, GPID);
 	newJob.stop();
 	Jobs.push_back(newJob);
 
-	printf("signal SIGTSTP was sent to pid %d\n", currPid);
+	printf("signal SIGTSTP was sent to pid %d\n", GPID);
 
 	return;
 

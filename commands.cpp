@@ -5,7 +5,7 @@ using namespace std;
 std::deque<std::string> cmd_history;
 std::vector<Job> Jobs; //This represents the list of Jobs. Please change to a preferred type (e.g array of char*)
 char* last_dir;
-
+extern int GPID;
 
 //********************************************
 // function name: ExeCmd
@@ -222,6 +222,7 @@ void ExeExternal(char *args[MAX_ARG], char* cmdString)
                     break;
 			default:
                 	// Add your code here
+                	GPID = pID;
                     waitpid(pID, NULL, 0); // the bgCmd will take care of bg Jobs off all kinds.
                     break;
 	}
