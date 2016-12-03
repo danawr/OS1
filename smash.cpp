@@ -21,8 +21,8 @@ char* L_Fg_Cmd;
 int GPID;
 char lineSize[MAX_LINE_SIZE];
 extern char* last_dir;
-
-
+extern std::deque<std::string> cmd_history;
+char* fgets_ret_value = NULL;
 //**************************************************************************************
 // function name: main
 // Description: main function of smash. get command from user and calls command functions
@@ -37,11 +37,17 @@ int main(int argc, char *argv[])
 	sighandler(SIGTSTP, &ctrl_z);
 	sighandler(SIGINT, &ctrl_c);
 
+	struct sigaction childAct;
+	childAct.sa_flags = SA_SIGINFO;
+	childAct.sa_sigaction = &remove_dead_bg_jobs;
+	sigaction(SIGCHLD, &childAct, NULL);
+
 	/************************************/
 	// Init globals
     last_dir = new char [MAX_LINE_SIZE]; //////////////need to free
 	strcpy(last_dir, "no last dir");
-	GPID = -1;
+	//SMASH_PID = getpid();
+	GPID=-1;
     //jobs = NULL;
 
 	L_Fg_Cmd =(char*)malloc(sizeof(char)*(MAX_LINE_SIZE+1));
@@ -55,12 +61,25 @@ int main(int argc, char *argv[])
     	while (1)
     	{
 	 	printf("smash > ");
-		fgets(lineSize, MAX_LINE_SIZE, stdin);
+	 	while (fgets_ret_value == NULL)
+             fgets_ret_value =fgets(lineSize, MAX_LINE_SIZE, stdin);
+        fgets_ret_value = NULL;
 		strcpy(cmdString, lineSize);
 		cmdString[strlen(lineSize)-1]='\0';
+		//if (!strcmp(cmdString, "\n"))
+          //  std::cout << "cmdString is enter" << std::endl;
+	/*	if (!strcmp(cmdString, "\n"))
+		{
+            lineSize[0]='\0';
+            cmdString[0]='\0';
+            continue;
+		}
+	*/
 
+        //std::cout <<"cmdString is: " << cmdString << std::endl;
 		//history maintainance
 		cmd_history.push_back(cmdString);
+		//std::cout <<"cmd_history back is: " << cmd_history.back() << std::endl;
 		if ( cmd_history.size()>=50 )
         {
             cmd_history.pop_front(); //the oldest.
@@ -68,8 +87,17 @@ int main(int argc, char *argv[])
 
 					// perform a complicated Command
 		if(!ExeComp(lineSize)) continue;
+		//strcpy(cmdString, lineSize);
+		//cmdString[strlen(lineSize) - 1] = '\0';
 					// background command
-	 	if(!BgCmd(lineSize)) continue;
+	 	if(!BgCmd(lineSize))
+	 	{
+            //lineSize[0]='\0';
+            //cmdString[0]='\0';
+            continue;
+	 	}
+	 	//strcpy(cmdString, lineSize);
+		//cmdString[strlen(lineSize) - 1] = '\0';
 					// built in commands
 		ExeCmd(lineSize, cmdString);
 

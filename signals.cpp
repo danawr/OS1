@@ -35,17 +35,21 @@ void sighandler(int signum, SIG_HANDLER_PTR func_ptr) {
 //********************************************
 void ctrl_c(int signum) {
 
+   // std::cout << "using ctrl_c" << std::endl;
     if(GPID == -1)//no process in fg
         return;
 
-	if (kill(GPID, SIGINT))
+	send_signal(GPID, SIGKILL);
+/*	if (kill(GPID, SIGKILL))
 	{
 		perror("Error: ");
-		printf("Error failed to send SIGINT to %d\n", GPID);
+		printf("Error failed to send SIGKILL to %d\n", GPID);
 		return;
 	}
 
-	printf("signal SIGINT was sent to pid %d\n", GPID);
+	printf("signal SIGKILL was sent to pid %d\n", GPID);
+*/
+	GPID=-1;
 	return;
 
 }
@@ -59,27 +63,151 @@ void ctrl_c(int signum) {
 
 void ctrl_z(int signum) {
 	//int currPid = getpid();
-	char* delimiters = " \t\n";
-	char* cmd = strtok(lineSize, delimiters);
+	//char* delimiters = " \t\n";
+	//char* cmd = strtok(lineSize, delimiters);
 
+    //std::cout << "using ctrl_z" << std::endl;
     if(GPID == -1)//no process in fg
         return;
 
-	if (kill(GPID, SIGTSTP))
+/*	if (kill(GPID, SIGTSTP))
 	{
 		perror("Error: ");
 		printf("Error failed to send SIGTSTP to %d\n", GPID);
 		return;
 	}
+*/
+    send_signal(GPID, SIGTSTP);
 
-	/********put process to a job list*******/
+    int ind=find_ind_by_id(GPID);
+    Jobs[ind].stop();
 
-	Job newJob=Job(cmd, GPID);
-	newJob.stop();
-	Jobs.push_back(newJob);
-
-	printf("signal SIGTSTP was sent to pid %d\n", GPID);
-
+	//printf("signal SIGTSTP was sent to pid %d\n", GPID);
+    GPID=-1;
 	return;
 
+}
+
+
+
+//********************************************
+// function name: remove_dead_bg_jobs
+// Description: removes dead child processes onc receiving SIGCHLD
+// Parameters: int signum - signal, siginfo_t * sigInfo - to know which process died, void* context NULL
+// Returns: void
+//********************************************
+void remove_dead_bg_jobs(int signum, siginfo_t * sigInfo, void* context)
+{
+  /*  std::cout << "remove_dead_bg_jobs is being used" << std::endl;
+    std::cout << "si code is: " << sigInfo->si_code << std::endl;
+    std::cout << "CLD_KILLED code is: " << CLD_KILLED << std::endl;
+    std::cout << "CLD_EXITED code is: " << CLD_EXITED << std::endl;
+    std::cout << "CLD_DUMPED code is: " << CLD_DUMPED << std::endl;
+  */
+    int jobInd = find_ind_by_id(sigInfo->si_pid);
+	if (jobInd == -1)
+	{
+        //std::cout << "couldn't find pid in vector" << std::endl;
+        return;
+	}
+
+    if (sigInfo->si_code==CLD_KILLED || sigInfo->si_code==CLD_EXITED|| sigInfo->si_code==CLD_DUMPED)
+        {
+           // std::cout << "trying to erase ind: "<< jobInd << std::endl;
+            Jobs.erase(Jobs.begin()+find_ind_by_id(sigInfo->si_pid));
+        }
+
+
+}
+
+//********************************************
+// function name: send_signal
+// Description: sends signal with the appropreate message
+// Parameters: int pid, int signal
+// Returns: void
+//********************************************
+void send_signal(int pid, int signal)
+{
+	std::cout << "signal " << sig_num_2_name(signal) << " was sent to pid " << pid << std::endl;
+	if (kill(pid, signal))
+	{
+		perror("smash error: > kill failure");
+	}
+}
+
+//********************************************
+// function name: sig_num_2_name
+// Description: translates for prining demands
+// Parameters: int signum - signal number
+// Returns: void
+//********************************************
+std::string sig_num_2_name(int signum)
+{
+	switch (signum)
+	{
+        case 1:
+            return "SIGHUP";
+        case 2:
+            return "SIGINT";
+        case 3:
+            return "SIGQUIT";
+        case 4:
+            return "SIGILL";
+        case 5:
+            return "SIGTRAP";
+        case 6:
+            return "SIGABRT";
+        case 7:
+            return "SIGBUS";
+        case 8:
+            return "SIGFPE";
+        case 9:
+            return "SIGKILL";
+        case 10:
+            return "SIGUSR1";
+        case 11:
+            return "SIGSEGV";
+        case 12:
+            return "SIGUSR2";
+        case 13:
+            return "SIGPIPE";
+        case 14:
+            return "SIGALRM";
+        case 15:
+            return "SIGTERM";
+        case 16:
+            return "SIGSTKFLT";
+        case 17:
+            return "SIGCHLD";
+        case 18:
+            return "SIGCONT";
+        case 19:
+            return "SIGSTOP";
+        case 20:
+            return "SIGTSTP";
+        case 21:
+            return "SIGTTIN";
+        case 22:
+            return "SIGTTOU";
+        case 23:
+            return "SIGURG";
+        case 24:
+            return "SIGXCPU";
+        case 25:
+            return "SIGXFSZ";
+        case 26:
+            return "SIGVTALRM";
+        case 27:
+            return "SIGPROF";
+        case 28:
+            return "SIGWINCH";
+        case 29:
+            return "SIGPOLL";
+        case 30:
+            return "SIGPWR";
+        case 31:
+            return "SIGSYS";
+        default:
+            return "UNKNOWN";
+	}
 }

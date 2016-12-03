@@ -1,17 +1,19 @@
 # Makefile for the smash program
-CC = gcc
-CFLAGS = -g -Wall
+CC = g++
+CFLAGS = -g -Wall -Wno-write-strings
 CCLINK = $(CC)
-OBJS = smash.o commands.o signals.o
+OBJS = smash.o commands.o signals.o Job.o
 RM = rm -f
 # Creating the  executable
 smash: $(OBJS)
 	$(CCLINK) -o smash $(OBJS)
 # Creating the object files
-commands.o: commands.c commands.h
-smash.o: smash.c commands.h
-signals.o: signals.c signals.h
+Job.o: Job.cpp Job.h 
+commands.o: commands.cpp commands.h
+smash.o: smash.cpp commands.h signals.h
+signals.o: signals.cpp signals.h
 # Cleaning old files before new make
 clean:
-	$(RM) $(TARGET) *.o *~ "#"* core.*
+	$(RM) $(TARGET) *.o *~ "#"* core.* smash
 
+# DO NOT DELETE

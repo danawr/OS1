@@ -20,8 +20,9 @@ class Job
         std::string get_name();
         int get_pid();
         //std::string get_arguments();
-        int get_arriving_time();
+        //nt get_arriving_time();
         int get_bg_arriving_time();
+        int get_last_stopping_time();
         bool is_stopped();
 
         void stop();
@@ -32,8 +33,9 @@ class Job
         std::string name_;
         int pid_;
         //std::string arguments;
-        int arriving_time_;
+        //int arriving_time_;
         int bg_arriving_time_;
+        int last_stopping_time_;
         bool stopped_;
 
 };

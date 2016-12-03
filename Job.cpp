@@ -15,7 +15,8 @@ Job::Job(char* name,  int pid)
     name_=name;
     pid_=pid;
     //arguments_=str(arguments);
-    arriving_time_=(int) (time(NULL));
+    bg_arriving_time_=(int) (time(NULL)); // we make the job when we enter it.
+    last_stopping_time_=-1;
     stopped_=0;
 }
 
@@ -34,9 +35,9 @@ int Job::get_pid()
 }
 
 
-int Job::get_arriving_time()
+int Job::get_last_stopping_time()
 {
-    return arriving_time_;
+    return last_stopping_time_;
 }
 
 int Job::get_bg_arriving_time()
@@ -51,11 +52,13 @@ bool Job::is_stopped()
 
 void Job::stop()
 {
+    last_stopping_time_=(int) (time(NULL));
     stopped_=1;
 }
 
 void Job::resume()
 {
+    last_stopping_time_=-1;
     stopped_=0;
 }
 
